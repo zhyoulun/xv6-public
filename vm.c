@@ -8,7 +8,7 @@
 #include "elf.h"
 
 extern char data[];  // defined by kernel.ld
-pde_t *kpgdir;  // for use in scheduler()
+pde_t *kpgdir;  // 内核页表(kernel page table dir) for use in scheduler()
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -115,12 +115,14 @@ static struct kmap {
 };
 
 // Set up kernel part of a page table.
+// setupkvm 用于创建并初始化一个新的页表，仅映射内核所需的内存。它的主要目标是为操作系统的内核创建一个干净的内存映射环境。
 pde_t*
 setupkvm(void)
 {
   pde_t *pgdir;
   struct kmap *k;
 
+  //
   if((pgdir = (pde_t*)kalloc()) == 0)
     return 0;
   memset(pgdir, 0, PGSIZE);
@@ -179,6 +181,7 @@ switchuvm(struct proc *p)
 
 // Load the initcode into address 0 of pgdir.
 // sz must be less than a page.
+// inituvm 用于初始化一个新进程的用户地址空间，将进程的指令和数据加载到内存中，并在页表中建立对应的映射。
 void
 inituvm(pde_t *pgdir, char *init, uint sz)
 {
@@ -218,6 +221,7 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
+// allocuvm 是一个用于扩展用户地址空间的函数。它将用户虚拟地址空间从当前大小（oldsz）扩展到目标大小（newsz），并为新的虚拟地址范围分配物理内存页，同时更新页表以建立映射。
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {

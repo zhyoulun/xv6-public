@@ -20,7 +20,7 @@ struct run {
 struct {
   struct spinlock lock;
   int use_lock;
-  struct run *freelist;
+  struct run *freelist;//freelist 是一个单链表的头指针，指向当前空闲内存块的链表头。
 } kmem;
 
 // Initialization happens in two phases.
@@ -43,6 +43,7 @@ kinit2(void *vstart, void *vend)
   kmem.use_lock = 1;
 }
 
+// freerange 函数的作用是将一段内存范围 [vstart, vend) 按照页（4KB）为单位划分，并将每一页的起始地址交给 kfree 函数，加入空闲内存链表（freelist）
 void
 freerange(void *vstart, void *vend)
 {
@@ -69,9 +70,12 @@ kfree(char *v)
 
   if(kmem.use_lock)
     acquire(&kmem.lock);
+  
+  // 在 kfree() 中，当释放内存时，会将释放的内存块重新插入到 freelist 链表中。插入位置是链表的头部
   r = (struct run*)v;
   r->next = kmem.freelist;
   kmem.freelist = r;
+
   if(kmem.use_lock)
     release(&kmem.lock);
 }
@@ -86,9 +90,12 @@ kalloc(void)
 
   if(kmem.use_lock)
     acquire(&kmem.lock);
+  
+  // 在 kalloc() 中，当需要分配内存时，会从 freelist 中取出链表的第一个节点，并将 freelist 更新为下一个节点。
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
+  
   if(kmem.use_lock)
     release(&kmem.lock);
   return (char*)r;

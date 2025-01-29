@@ -9,12 +9,12 @@
 
 struct {
   struct spinlock lock;
-  struct proc proc[NPROC];
-} ptable;
+  struct proc proc[NPROC];//最多记录64个进程
+} ptable;//进程表
 
 static struct proc *initproc;
 
-int nextpid = 1;
+int nextpid = 1;//进程编号生成器
 extern void forkret(void);
 extern void trapret(void);
 
@@ -148,6 +148,7 @@ userinit(void)
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
 
+  //设置进程状态为可运行
   p->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -336,18 +337,29 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
+      /*
+      时间片的长度是由硬件定时器决定的，而不是直接在调度器代码中设置。
+      当时间片用完时，时钟中断会触发，从而强制当前进程暂停，并返回调度器重新调度。
+      */
+
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+      //将调度器中的当前进程指针指向新进程 p。c->proc 用于记录当前正在运行的进程。内核表示当前 CPU 将运行进程 p。
       c->proc = p;
+      //切换到用户进程的虚拟内存上下文。switchuvm(p) 会更新硬件的页表寄存器，使得接下来执行的指令能够访问进程 p 的用户虚拟地址空间。它加载 p 的页表，并确保内核可以正确管理用户内存访问。
       switchuvm(p);
+      //设置进程状态为 RUNNING。表示进程 p 已经被调度器选中，准备运行。
       p->state = RUNNING;
 
+      ////保存调度器上下文，切换到进程上下文。	swtch 是上下文切换的关键，它保存当前 CPU 上的调度器状态（寄存器、栈指针等）到 c->scheduler。然后切换到进程 p 的上下文 p->context。这一步后，CPU 将开始执行进程 p 的指令。
       swtch(&(c->scheduler), p->context);
+      //切换回内核模式虚拟内存。当 p 进程通过系统调用或其他原因切换回内核时，switchkvm 恢复内核页表。这样可以保护内核内存不被用户进程错误或恶意代码破坏。
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
+      //清理当前 CPU 的进程指针。这段注释说明，进程 p 执行完一段时间后，调度器重新获得控制权。	此时，p 应该已经在返回调度器之前更改了自己的状态（例如变为 SLEEPING、ZOMBIE 或 RUNNABLE）。c->proc = 0 清除当前 CPU 的进程记录，表示 CPU 目前没有正在运行的进程。
       c->proc = 0;
     }
     release(&ptable.lock);

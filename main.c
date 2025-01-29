@@ -17,6 +17,7 @@ extern char end[]; // first address after kernel loaded from ELF file
 int
 main(void)
 {
+  //初始化kmem.freelist
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
   kvmalloc();      // kernel page table
   mpinit();        // detect other processors
@@ -32,7 +33,9 @@ main(void)
   fileinit();      // file table
   ideinit();       // disk 
   startothers();   // start other processors
+  //初始化kmem.freelist
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers()
+  //第一个用户进程
   userinit();      // first user process
   mpmain();        // finish this processor's setup
 }
@@ -54,6 +57,7 @@ mpmain(void)
   cprintf("cpu%d: starting %d\n", cpuid(), cpuid());
   idtinit();       // load idt register
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
+  //进程调度
   scheduler();     // start running processes
 }
 
@@ -99,12 +103,18 @@ startothers(void)
 // hence the __aligned__ attribute.
 // PTE_PS in a page directory entry enables 4Mbyte pages.
 
+// 创建了一个页目录（entrypgdir），用于初始化 CPU 的分页机制。
+// 使用 4MB 大页（PTE_PS），避免使用二级页表，提高效率。
+// 双映射：用户模式可以访问 0x0 ~ 4MB 的物理地址。内核模式（KERNBASE 开始）也能访问同一块物理地址。
+// AP 在启动时会加载这个页目录，进入保护模式。
+//
+// 在操作系统初始化时，entrypgdir 是用来设置页目录的数组，操作系统通常会将其物理地址加载到 CR3 寄存器中。这样，CPU 在执行分页操作时，知道应该在哪个页目录表中查找虚拟地址对应的物理地址。
 __attribute__((__aligned__(PGSIZE)))
 pde_t entrypgdir[NPDENTRIES] = {
   // Map VA's [0, 4MB) to PA's [0, 4MB)
   [0] = (0) | PTE_P | PTE_W | PTE_PS,
   // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
-  [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,
+  [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS, // 512
 };
 
 //PAGEBREAK!

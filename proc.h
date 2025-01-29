@@ -32,15 +32,21 @@ struct context {
   uint eip;
 };
 
+// UNUSED - 未使用
+// EMBRYO - 表示正在创建中的进程（“胚胎阶段”）。当内核分配了一个新的进程结构（struct proc）但尚未完全初始化时，进程的状态会被设置为 EMBRYO。典型场景是 fork() 系统调用时，父进程为子进程分配资源但子进程尚未准备运行。
+// SLEEPING - 睡眠
+// RUNNABLE - 可运行
+// RUNNING - 运行中
+// ZOMBIE - 僵尸进程
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-  uint sz;                     // Size of process memory (bytes)
+  uint sz;                     // 进程内存大小，默认一个页4KB，Size of process memory (bytes)
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
-  enum procstate state;        // Process state
-  int pid;                     // Process ID
+  enum procstate state;        // 进程状态 Process state
+  int pid;                     // 进程ID Process ID
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process

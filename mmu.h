@@ -62,7 +62,7 @@ struct segdesc {
 #define STS_IG32    0xE     // 32-bit Interrupt Gate
 #define STS_TG32    0xF     // 32-bit Trap Gate
 
-// A virtual address 'la' has a three-part structure as follows:
+// A virtual address 'va' has a three-part structure as follows:
 //
 // +--------10------+-------10-------+---------12----------+
 // | Page Directory |   Page Table   | Offset within Page  |
@@ -71,10 +71,10 @@ struct segdesc {
 //  \--- PDX(va) --/ \--- PTX(va) --/
 
 // page directory index
-#define PDX(va)         (((uint)(va) >> PDXSHIFT) & 0x3FF)
+#define PDX(va)         (((uint)(va) >> PDXSHIFT) & 0x3FF)  //>>22
 
 // page table index
-#define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF)
+#define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF)  //>>12
 
 // construct virtual address from indexes and offset
 #define PGADDR(d, t, o) ((uint)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
@@ -87,8 +87,9 @@ struct segdesc {
 #define PTXSHIFT        12      // offset of PTX in a linear address
 #define PDXSHIFT        22      // offset of PDX in a linear address
 
+//宏定义用来将地址向上对齐到页大小的边界（通常是 4KB）。
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+#define PGROUNDDOWN(sz) (((sz)) & ~(PGSIZE-1))
 
 // Page table/directory entry flags.
 #define PTE_P           0x001   // Present
