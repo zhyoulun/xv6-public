@@ -18,8 +18,8 @@ int
 main(void)
 {
   //初始化kmem.freelist
-  kinit1(end, P2V(4*1024*1024)); // phys page allocator
-  kvmalloc();      // kernel page table
+  kinit1(end, P2V(4*1024*1024)); // phys page allocator, 这里给freelist生成了1024个item
+  kvmalloc();      // kernel page table，这里用掉了freelist上的一个item
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors

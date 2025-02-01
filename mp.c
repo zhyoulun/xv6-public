@@ -54,14 +54,14 @@ mpsearch(void)
 
   bda = (uchar *) P2V(0x400);
   if((p = ((bda[0x0F]<<8)| bda[0x0E]) << 4)){
-    if((mp = mpsearch1(p, 1024)))
+    if((mp = mpsearch1(p, 1024)))  //1) in the first KB of the EBDA;
       return mp;
   } else {
     p = ((bda[0x14]<<8)|bda[0x13])*1024;
-    if((mp = mpsearch1(p-1024, 1024)))
+    if((mp = mpsearch1(p-1024, 1024))) //2) in the last KB of system base memory;
       return mp;
   }
-  return mpsearch1(0xF0000, 0x10000);
+  return mpsearch1(0xF0000, 0x10000); //3) in the BIOS ROM between 0xE0000 and 0xFFFFF.
 }
 
 // Search for an MP configuration table.  For now,
@@ -104,7 +104,7 @@ mpinit(void)
   lapic = (uint*)conf->lapicaddr;
   for(p=(uchar*)(conf+1), e=(uchar*)conf+conf->length; p<e; ){
     switch(*p){
-    case MPPROC:
+    case MPPROC://获取apicid的值，并存储到cpu[].apicid中
       proc = (struct mpproc*)p;
       if(ncpu < NCPU) {
         cpus[ncpu].apicid = proc->apicid;  // apicid may differ from ncpu
@@ -112,7 +112,7 @@ mpinit(void)
       }
       p += sizeof(struct mpproc);
       continue;
-    case MPIOAPIC:
+    case MPIOAPIC://获取io apic no的值，并存储到ioapicid中
       ioapic = (struct mpioapic*)p;
       ioapicid = ioapic->apicno;
       p += sizeof(struct mpioapic);

@@ -14,13 +14,21 @@ extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
+// tv 可能是 trap vector（陷阱向量）的缩写
 void
 tvinit(void)
 {
   int i;
 
-  for(i = 0; i < 256; i++)
-    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0);
+  // 初始化所有的vector
+  for(i = 0; i < 256; i++) {
+    //第二个参数，0表示interrupt gate
+    //最后一个参数，权限等级0
+    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], DPL_KERN);
+  }
+  
+  //第二个参数，1表示trap gate
+  //最后一个参数，权限等级3
   SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);
 
   initlock(&tickslock, "time");

@@ -45,6 +45,7 @@ ioapicwrite(int reg, uint data)
   ioapic->data = data;
 }
 
+// ioapicinit() 负责初始化 IO APIC（I/O Advanced Programmable Interrupt Controller），用于管理 外部设备中断。
 void
 ioapicinit(void)
 {

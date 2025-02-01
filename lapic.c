@@ -51,6 +51,7 @@ lapicw(int index, int value)
   lapic[ID];  // wait for write to finish, by reading
 }
 
+// lapicinit() 负责 初始化每个 CPU 的 Local APIC（LAPIC），使其可以管理本地 CPU 的中断，如时钟中断、IPI（Inter-Processor Interrupts）等。
 void
 lapicinit(void)
 {
